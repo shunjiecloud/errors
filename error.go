@@ -50,6 +50,8 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+
+	"go.uber.org/zap/zapcore"
 )
 
 // The maximum number of stackframes on any error.
@@ -62,13 +64,14 @@ type Error struct {
 	stack  []uintptr
 	frames []StackFrame
 	prefix string
+	Fields []zapcore.Field
 }
 
 // New makes an Error from the given value. If that value is already an
 // error then it will be used directly, if not, it will be passed to
 // fmt.Errorf("%v"). The stacktrace will point to the line of code that
 // called New.
-func New(e interface{}) *Error {
+func New(e interface{}, externFields ...zapcore.Field) *Error {
 	var err error
 
 	switch e := e.(type) {
@@ -80,9 +83,11 @@ func New(e interface{}) *Error {
 
 	stack := make([]uintptr, MaxStackDepth)
 	length := runtime.Callers(2, stack[:])
+
 	return &Error{
-		Err:   err,
-		stack: stack[:length],
+		Err:    err,
+		stack:  stack[:length],
+		Fields: externFields,
 	}
 }
 
@@ -90,6 +95,10 @@ func New(e interface{}) *Error {
 // error then it will be used directly, if not, it will be passed to
 // fmt.Errorf("%v"). The skip parameter indicates how far up the stack
 // to start the stacktrace. 0 is from the current call, 1 from its caller, etc.
+func Adapt(e error) *Error {
+	return Wrap(e, 1)
+}
+
 func Wrap(e interface{}, skip int) *Error {
 	if e == nil {
 		return nil

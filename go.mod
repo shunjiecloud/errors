@@ -1,5 +1,5 @@
-module github.com/shunjieyun/errors
+module github.com/shunjiecloud/errors
 
-go 1.13
+go 1.14
 
 require go.uber.org/zap v1.13.0
